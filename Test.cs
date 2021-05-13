@@ -303,6 +303,24 @@ namespace BitcoinWalletGenerator
       return result;
     }
 
+    private static bool WifImportTest()
+    {
+      var result = true;
+
+      for (int i = 0; i < 0xff; i++)
+      {
+        var wallet1 = BitcoinWallet.CreateNew();
+        var wif1 = wallet1.GetWif();
+        var wallet2 = BitcoinWallet.Import(wif1);
+        var wif2 = wallet2.GetWif();
+
+        result &= wallet1.GetPrivateKey().SequenceEqual(wallet2.GetPrivateKey());
+        result &= wif1 == wif2;
+      }
+
+      return result;
+    }
+
     private static bool FormatHexTest()
     {
       if (!ToHexadecimal(new byte[] { 0x00, 0x01, 0x32, 0x50, 0xfe, 0xff }).Equals("00013250feff", StringComparison.OrdinalIgnoreCase))

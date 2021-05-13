@@ -37,7 +37,6 @@ namespace BitcoinWalletGenerator
 
       // TODO:
       // - allow user to enter or generate private key manually (e.g. dice rolls)
-      // - import wif
     }
   }
 }

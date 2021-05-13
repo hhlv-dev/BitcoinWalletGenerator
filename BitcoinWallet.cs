@@ -55,10 +55,13 @@ namespace BitcoinWalletGenerator
     /// <param name="wif">wallet import format string</param>
     public static BitcoinWallet Import(string wif)
     {
-      // TODO:
-      // - validate wif
-      // - import from wif
-      throw new NotImplementedException();
+      var wifBytes = Format.FromBase58Check(wif);
+      if (!IsValidWif(wifBytes))
+      {
+        throw new InvalidOperationException("Invalid WIF.");
+      }
+      var privateKey = GetPrivateKeyBytesFromWif(wifBytes);
+      return FromPrivateKey(privateKey);
     }
 
     /// <summary>
@@ -186,6 +189,13 @@ namespace BitcoinWalletGenerator
       return bytes;
     }
 
+    private static byte[] GetPrivateKeyBytesFromWif(byte[] wifBytes)
+    {
+      var privateKeyBytes = new byte[KeySize];
+      Array.Copy(wifBytes, 1, privateKeyBytes, 0, KeySize);
+      return privateKeyBytes;
+    }
+
     private static byte[] CalculatePublicKey(byte[] privateKey)
     {
       var secp256k1Curve = ECCurve.CreateFromFriendlyName(Secp256k1);
@@ -226,6 +236,25 @@ namespace BitcoinWalletGenerator
       compressed[0] = (byte)(yIsEven ? BitcoinCompressedPublicKeyEvenPrefix : BitcoinCompressedPublicKeyOddPrefix);
       Array.Copy(publicKey, 1, compressed, 1, compressed.Length - 1);
       return compressed;
+    }
+
+    private static bool IsValidWif(byte[] wifBytes)
+    {
+      var withoutChecksum = new byte[wifBytes.Length - 4];
+      Array.Copy(wifBytes, 0, withoutChecksum, 0, withoutChecksum.Length);
+
+      using var sha256 = new SHA256Managed();
+
+      var hash = sha256.ComputeHash(withoutChecksum);
+      hash = sha256.ComputeHash(hash);
+
+      var isValid = wifBytes[0] == MainnetWifPrefix;
+      isValid &= hash[0] == wifBytes[^4];
+      isValid &= hash[1] == wifBytes[^3];
+      isValid &= hash[2] == wifBytes[^2];
+      isValid &= hash[3] == wifBytes[^1];
+
+      return isValid;
     }
 
     #endregion
